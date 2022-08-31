@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity >=0.7.0 <0.9.0;
+
+interface IAggregator {
+    function latestAnswer() external view returns (int256 answer);
+}
+
+interface ICurvePool {
+    function get_virtual_price() external view returns (uint256 price);
+}
+
+interface IYearnVault {
+    function pricePerShare() external view returns (uint256 price);
+}
+
+contract YVIronBankOracle {
+    ICurvePool public constant IronBank = ICurvePool(0x2dded6Da1BF5DBdF597C45fcFaa3194e53EcfeAF);
+    IYearnVault public constant vault = IYearnVault(0x27b7b1ad7288079A66d12350c828D3C00A6F07d7);   // 1123976544628569917
+    IAggregator public constant DAI = IAggregator(0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9);     // 100054748
+    IAggregator public constant USDC = IAggregator(0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6);    // 100024509
+    IAggregator public constant USDT = IAggregator(0x3E7d1eAB13ad0104d2750B8863b489D65364e32D);    // 100005929
+
+    /**
+     * @dev Returns the smallest of two numbers.
+     */
+    // FROM: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/6d97f0919547df11be9443b54af2d90631eaa733/contracts/utils/math/Math.sol
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
+    }
+
+    function get() public view returns (uint256) {
+        // uint256 minStable = min(uint256(DAI.latestAnswer()), min(uint256(USDC.latestAnswer()), uint256(USDT.latestAnswer())));
+        uint256 minStable = min(100054748, min(100024509, 100005929));
+
+        //uint256 yvIBPrice = IronBank.get_virtual_price() * minStable * vault.pricePerShare();
+        uint256 yvIBPrice = IronBank.get_virtual_price() * minStable * 1123976544628569917;
+
+        return yvIBPrice / 1e26;
+    }
+}
